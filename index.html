@@ -48,9 +48,10 @@
     --logo-text-spacing:0.04em;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  html{scroll-behavior:smooth;}
+  html{scroll-behavior:smooth; background:#000000; overscroll-behavior:none;}
   body{
-    background:var(--paper);
+    background:#000000;   /* 預設黑底:手機過度捲動/網址列伸縮時不會露出白色 */
+    overscroll-behavior:none;
     color:var(--ink);
     font-family:"Inter","Noto Sans TC",sans-serif;
     -webkit-font-smoothing:antialiased;
@@ -126,6 +127,7 @@
 
   .full-section{
     min-height:100vh;
+    min-height:100svh;
     display:flex;
     flex-direction:column;
     justify-content:center;
@@ -145,6 +147,8 @@
 .full-section > *:not(.section-bg):not(.hero-bg){
   position:relative; z-index:1;
 }
+  /* character / goods / about 維持白底(其餘區域預設黑底) */
+  #character, #goods, #about{ background-color:#ffffff; }
   #character .section-bg{ background-image:none; }
   #goods .section-bg{ background-image:none; }
   #about .section-bg{ background-image:url(about-background.png); }
@@ -177,6 +181,7 @@
   }
 
   .hero{
+    background-color:#000000;
     padding:48px 32px 56px;
     justify-content:flex-end;
   }
@@ -256,6 +261,7 @@
     display:flex;
     transition:transform .4s ease;
   }
+  .carousel-track.is-centered{ justify-content:center; }
   .carousel-track .tile{
     flex:0 0 calc(100% / 3);
     padding:0 12px;
@@ -392,6 +398,8 @@
   @media (max-width:860px){
     nav.groups{display:none;}
     .menu-toggle{display:flex;}
+    /* 手機:內容整體往上挪,避免左右箭頭被瀏覽器底部工具列擋住。數值越大,內容越往上 */
+    .full-section:not(.hero){ padding-bottom:150px; }
   }
   @media (max-width:520px){
     :root{
@@ -509,6 +517,7 @@
           </div>
           <h3>luān-tshau-tshau Postcard</h3>
         </div>
+      </div>
     </div>
     <div class="carousel-nav">
       <button type="button" class="car-arrow car-prev" aria-label="上一個">‹</button>
@@ -661,9 +670,15 @@
     window.scrollTo(0, 0);
   });
 
+  /* 滾輪/觸控板:必須是「新的一次滑動」才換頁。慣性滾動(連續事件)不會再觸發下一頁 */
+  let lastWheelTime = 0;
   window.addEventListener('wheel', (e) => {
-    if (isAnimating) { e.preventDefault(); return; }
     e.preventDefault();
+    const now = Date.now();
+    const idle = now - lastWheelTime;
+    lastWheelTime = now;
+    if (isAnimating || idle < 220) return;
+    if (Math.abs(e.deltaY) < 4) return;
     const current = getCurrentPanelIndex();
     goToPanel(current + (e.deltaY > 0 ? 1 : -1));
   }, { passive:false });
@@ -703,6 +718,7 @@
 
     function update(){
       const itemWidth = 100 / visibleCount();
+      track.classList.toggle('is-centered', total <= visibleCount());
       track.style.transform = `translateX(-${index * itemWidth}%)`;
       prevBtn.disabled = index <= 0;
       nextBtn.disabled = index >= maxIndex();
