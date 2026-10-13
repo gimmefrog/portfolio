@@ -38,6 +38,14 @@
     --menu-icon-font:24px;
     --menu-icon-w:30px;
     --menu-icon-h:30px;
+
+    /* ---------- Logo 設定 ---------- */
+    /* 圖片模式:調整圖片高度(寬度依比例自動) */
+    --logo-img-height:8px;
+    /* 文字模式:調整文字大小 / 粗細 / 字距 */
+    --logo-text-size:14px;
+    --logo-text-weight:700;
+    --logo-text-spacing:0.04em;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html{scroll-behavior:smooth;}
@@ -68,8 +76,26 @@
     font-family:"Inter","Noto Sans TC",sans-serif;
     font-size:20px; font-weight:600; letter-spacing:0.02em;
   }
-  .brand img{height:8px; width:auto; display:block; filter:brightness(0) invert(1); transition:filter .35s ease;}
+  /* 圖片模式:預設用黑色 logo 圖,首圖上自動反白,白底區塊恢復黑色 */
+  .brand img{height:var(--logo-img-height, 8px); width:auto; display:block; filter:brightness(0) invert(1); transition:filter .35s ease;}
   header.header--light .brand img{filter:none;}
+
+  /* 文字模式:首圖上白字,白底區塊黑字 */
+  .brand-text{
+    display:block;
+    font-size:var(--logo-text-size, 14px);
+    font-weight:var(--logo-text-weight, 700);
+    letter-spacing:var(--logo-text-spacing, 0.04em);
+    line-height:1;
+    white-space:nowrap;
+    color:#ffffff;
+    transition:color .35s ease;
+  }
+  header.header--light .brand-text{ color:#000000; }
+
+  /* 依 data-logo-mode 切換顯示哪一種 */
+  .brand[data-logo-mode="image"] .brand-text{ display:none; }
+  .brand[data-logo-mode="text"]  .brand-img{ display:none; }
 
   nav.groups{
     display:flex; gap:28px; align-items:center;
@@ -291,20 +317,23 @@
   }
 
   footer{
-    border-top:1px solid var(--line);
-    padding:56px 32px 32px;
-    display:flex; flex-direction:column; gap:24px;
-    /* ↓↓↓ 直接改這四個數值,可調整頁尾的色塊/背景圖與文字樣式 ↓↓↓ */
-    --footer-bg-color:transparent;
-    --footer-bg-image:none;
+    /* ↓↓↓ 直接改這些數值,可調整頁尾的高度、色塊/背景圖與文字樣式 ↓↓↓ */
+    --footer-height:200px;          /* 頁尾高度(內容較多時會自動撐高) */
+    --footer-bg-color:#ffffff;      /* 色塊顏色 */
+    --footer-bg-image:none;         /* 想用圖片:改成 url('圖片檔名.jpg') */
     --footer-text-color:#000000;
     --footer-text-size:11px;
     --footer-text-weight:400;
+
+    min-height:var(--footer-height);
+    padding:32px;
+    display:flex; flex-direction:column; justify-content:center; gap:24px;
     background-color:var(--footer-bg-color);
     background-image:var(--footer-bg-image);
     background-size:cover;
     background-position:center;
   }
+  .footer-links:empty{ display:none; }
   .footer-links{
     display:flex; justify-content:center; align-items:center; gap:20px;
     margin-bottom:24px;
@@ -381,8 +410,10 @@
 <body>
 
 <header id="siteHeader">
-  <a href="#top" class="brand" id="logoLink">
-    <img src="logo black.png" alt="ZXF Portfolio" style="height:8px; width:auto; display:block;">
+  <!-- data-logo-mode 改成 "image" 顯示圖片、改成 "text" 顯示文字 -->
+  <a href="#top" class="brand" id="logoLink" data-logo-mode="image">
+    <img class="brand-img" src="logo black.png" alt="ZXF Portfolio">
+    <span class="brand-text">ZXF Portfolio</span>
   </a>
 
   <nav class="groups">
@@ -499,6 +530,7 @@
       <button type="button" class="car-arrow car-next" aria-label="下一個">›</button>
     </div>
   </div>
+</section>
 
 <section class="about-block full-section" id="about" data-header="light">
   <div class="section-bg"></div>
@@ -509,8 +541,7 @@
 </section>
 
 <footer id="siteFooter" data-header="light">
-  <div class="footer-links">
-  </div>
+  <div class="footer-links"></div>
   <div class="footer-bottom">
     <span>This site is for professional applications only.</span>
     <span>Designed by ZHANG XIN FANG © 2026</span>
@@ -585,6 +616,10 @@
   let isAnimating = false;
 
   function getCurrentPanelIndex(){
+    /* 已捲到頁面最底(頁尾較矮時,頁尾頂端不會對齊視窗頂端)→ 視為最後一個面板 */
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+      return panels.length - 1;
+    }
     let closest = 0, minDist = Infinity;
     panels.forEach((p, i) => {
       const dist = Math.abs(p.getBoundingClientRect().top);
